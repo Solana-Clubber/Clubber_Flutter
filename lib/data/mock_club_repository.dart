@@ -1,0 +1,123 @@
+import '../models/models.dart';
+
+class MockClubRepository {
+  MockClubRepository._({required this.clubs, required this.songRequests});
+
+  factory MockClubRepository.seeded() {
+    final now = DateTime.now();
+
+    return MockClubRepository._(
+      clubs: const [
+        ClubVenue(
+          id: 'club-axis-seoul',
+          name: 'Axis Seoul',
+          neighborhood: '청담',
+          musicStyle: 'Open Format / Afro House',
+          heroTagline: '메인룸에서 바로 반응 오는 청담 대표 요청 스팟',
+          vibe: '굵직한 드롭과 즉석 리퀘스트가 잘 먹히는 금요일 메인룸.',
+          distanceMeters: 320,
+          walkingMinutes: 4,
+          crowdLevel: 82,
+          queueEtaMinutes: 11,
+          mapPositionX: 0.24,
+          mapPositionY: 0.36,
+          residentArtist: 'DJ KANA',
+          liveSignalSummary: '지금은 피크타임 직전. 후렴 강한 곡과 생일 콜아웃이 잘 통하는 시간대예요.',
+          coverChargeWon: 30000,
+          creatorPayoutPoolWon: 0,
+          mintPriceWon: 0,
+          spotlightMoments: ['00:40 하이라이트 빌드업', '01:20 메인 드롭 타임'],
+          amenities: ['빠른 입장', '테이블 구역', '포토존'],
+          tags: ['Peak time', 'Birthday shoutout'],
+        ),
+        ClubVenue(
+          id: 'club-signal-hannam',
+          name: 'Signal Hannam',
+          neighborhood: '한남',
+          musicStyle: 'Hip-hop / R&B',
+          heroTagline: '보컬 라인이 살아나는 한남 라운지',
+          vibe: '너무 세지 않게 분위기를 올리고 싶은 손님들이 많이 찾는 라운지.',
+          distanceMeters: 610,
+          walkingMinutes: 8,
+          crowdLevel: 68,
+          queueEtaMinutes: 6,
+          mapPositionX: 0.58,
+          mapPositionY: 0.28,
+          residentArtist: 'DJ HYO',
+          liveSignalSummary: '싱얼롱 요청이 잘 들어오는 시간대라 후렴이 익숙한 곡이 유리해요.',
+          coverChargeWon: 22000,
+          creatorPayoutPoolWon: 0,
+          mintPriceWon: 0,
+          spotlightMoments: ['00:30 여성 보컬 블록', '01:10 글로벌 히트 셋'],
+          amenities: ['라운지 좌석', '영문 응대', '시그니처 칵테일'],
+          tags: ['Singalong', 'Vocal set'],
+        ),
+        ClubVenue(
+          id: 'club-pulse-hapjeong',
+          name: 'Pulse Hapjeong',
+          neighborhood: '합정',
+          musicStyle: 'Tech House / Indie Dance',
+          heroTagline: '크루 반응이 빠른 합정 테크하우스 베이스먼트',
+          vibe: '템포가 단단해서 큐에 올린 곡이 바로 에너지를 바꾸는 스타일의 플로어.',
+          distanceMeters: 980,
+          walkingMinutes: 12,
+          crowdLevel: 74,
+          queueEtaMinutes: 14,
+          mapPositionX: 0.76,
+          mapPositionY: 0.62,
+          residentArtist: 'DJ MINHO',
+          liveSignalSummary: '새벽으로 갈수록 드라이브감 있는 요청이 잘 받아들여져요.',
+          coverChargeWon: 25000,
+          creatorPayoutPoolWon: 0,
+          mintPriceWon: 0,
+          spotlightMoments: ['00:20 텐션 상승', '02:10 클로징 롱믹스'],
+          amenities: ['로컬 크루', '바 좌석', '흡연 부스'],
+          tags: ['Crew favorite', 'Late-night'],
+        ),
+      ],
+      songRequests: [
+        SongRequest(
+          id: 'request-001',
+          clubId: 'club-axis-seoul',
+          requesterName: 'Mina',
+          songTitle: 'One More Time',
+          artistName: 'Daft Punk',
+          note: '생일 콜아웃 직전에 부탁해요.',
+          requestedAt: now.subtract(const Duration(minutes: 12)),
+          offeredPriceWon: 28000,
+          status: SongRequestStatus.pendingDjApproval,
+          djMessage: 'DJ가 드롭 타이밍을 확인 중이에요.',
+        ),
+        SongRequest(
+          id: 'request-002',
+          clubId: 'club-signal-hannam',
+          requesterName: 'Jae',
+          songTitle: 'Good Days',
+          artistName: 'SZA',
+          note: '다음 R&B 파트에서 듣고 싶어요.',
+          requestedAt: now.subtract(const Duration(minutes: 20)),
+          offeredPriceWon: 22000,
+          finalPriceWon: 25000,
+          status: SongRequestStatus.awaitingUserApproval,
+          djMessage: '지금 무드에 맞아요. 마지막 확인만 해주세요.',
+        ),
+        SongRequest(
+          id: 'request-003',
+          clubId: 'club-pulse-hapjeong',
+          requesterName: 'Chris',
+          songTitle: 'Losing It',
+          artistName: 'FISHER',
+          note: '클로징 직전에 강하게 가고 싶어요.',
+          requestedAt: now.subtract(const Duration(minutes: 32)),
+          offeredPriceWon: 34000,
+          finalPriceWon: 34000,
+          status: SongRequestStatus.queued,
+          djMessage: '양측 승인 완료. 다음 블록에 큐업됐어요.',
+        ),
+      ],
+    );
+  }
+
+  final List<ClubVenue> clubs;
+  final List<SongRequest> songRequests;
+}

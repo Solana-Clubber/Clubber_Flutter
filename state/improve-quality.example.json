@@ -1,0 +1,30 @@
+{
+  "command": "/improve-quality",
+  "status": "running",
+  "phase": "edit",
+  "goal": "Improve concurrency safety in a Swift async callback bridge",
+  "scope": [
+    "ios/Runner/"
+  ],
+  "runtime_lanes": [
+    "ios",
+    "concurrency"
+  ],
+  "plan_steps": [
+    "Identify actor ownership violations",
+    "Replace unsafe task handoffs",
+    "Verify target build and concurrency warnings"
+  ],
+  "touched_files": [
+    "ios/Runner/AppDelegate.swift"
+  ],
+  "verification": [
+    {
+      "name": "Concurrency audit",
+      "result": "not-run",
+      "evidence": "Waiting for edit phase completion"
+    }
+  ],
+  "blockers": [],
+  "updated_at": "2026-04-01T14:10:00Z"
+}

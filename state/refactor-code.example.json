@@ -1,0 +1,37 @@
+{
+  "command": "/refactor-code",
+  "status": "running",
+  "phase": "verify",
+  "goal": "Simplify wallet session persistence without changing behavior",
+  "scope": [
+    "lib/services/wallet_session_store.dart",
+    "test/services/wallet_session_store_test.dart"
+  ],
+  "runtime_lanes": [
+    "flutter",
+    "web3"
+  ],
+  "plan_steps": [
+    "Inspect current persistence flow and tests",
+    "Collapse duplicate serialization helpers",
+    "Re-run targeted and broad verification"
+  ],
+  "touched_files": [
+    "lib/services/wallet_session_store.dart",
+    "test/services/wallet_session_store_test.dart"
+  ],
+  "verification": [
+    {
+      "name": "./.flutter-sdk/bin/flutter analyze",
+      "result": "pass",
+      "evidence": "No issues found"
+    },
+    {
+      "name": "./.flutter-sdk/bin/flutter test test/services/wallet_session_store_test.dart",
+      "result": "pass",
+      "evidence": "Targeted wallet session tests passed"
+    }
+  ],
+  "blockers": [],
+  "updated_at": "2026-04-01T14:00:00Z"
+}

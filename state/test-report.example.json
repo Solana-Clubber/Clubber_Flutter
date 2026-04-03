@@ -1,0 +1,48 @@
+{
+  "test_strategy_summary": "The wallet entry flow is well-covered by Flutter tests, but real-device wallet validation remains a required manual gate.",
+  "scope": [
+    "lib/viewmodels/root_shell_view_model.dart",
+    "lib/services/wallet_session_store.dart",
+    "test/viewmodels/root_shell_view_model_test.dart",
+    "test/services/wallet_session_store_test.dart"
+  ],
+  "coverage_plan": [
+    {
+      "area": "wallet session restore",
+      "risk": "Persisted session restore could regress and break authenticated app entry.",
+      "tests": [
+        {
+          "type": "unit",
+          "target": "test/services/wallet_session_store_test.dart",
+          "purpose": "Verify persistence and restoration behavior stays stable."
+        },
+        {
+          "type": "widget",
+          "target": "test/widget_test.dart",
+          "purpose": "Verify wallet gate and authenticated entry flow still render correctly."
+        }
+      ]
+    },
+    {
+      "area": "real wallet happy path",
+      "risk": "A platform/device issue could pass local tests but fail on actual Android wallet connection.",
+      "tests": [
+        {
+          "type": "manual",
+          "target": "Android device + Mock MWA Wallet validation",
+          "purpose": "Verify authorize/sign flow on the real platform boundary."
+        }
+      ]
+    }
+  ],
+  "verification_commands": [
+    "./.flutter-sdk/bin/flutter analyze",
+    "./.flutter-sdk/bin/flutter test"
+  ],
+  "missing_coverage": [
+    "No automated device-level wallet-connect coverage exists yet"
+  ],
+  "flaky_risks": [
+    "Platform wallet integration remains partly manual and could hide environment-specific regressions"
+  ]
+}

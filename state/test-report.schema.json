@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/state/test-report.schema.json",
+  "title": "AI Harness Test Strategy Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "test_strategy_summary",
+    "scope"
+  ],
+  "properties": {
+    "test_strategy_summary": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "coverage_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "area",
+          "risk",
+          "tests"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "target",
+                "purpose"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "unit",
+                    "widget",
+                    "integration",
+                    "platform",
+                    "manual"
+                  ]
+                },
+                "target": {
+                  "type": "string"
+                },
+                "purpose": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "verification_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "missing_coverage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "flaky_risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

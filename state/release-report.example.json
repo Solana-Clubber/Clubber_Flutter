@@ -1,0 +1,38 @@
+{
+  "release_summary": "Core Flutter verification passes, but production rollout remains blocked by missing real-device wallet validation.",
+  "scope": [
+    "lib/",
+    "android/",
+    "ios/"
+  ],
+  "checklist": [
+    {
+      "item": "./.flutter-sdk/bin/flutter analyze",
+      "status": "pass",
+      "evidence": "No issues found"
+    },
+    {
+      "item": "./.flutter-sdk/bin/flutter test",
+      "status": "pass",
+      "evidence": "All tests passed"
+    },
+    {
+      "item": "Android device wallet happy-path validation",
+      "status": "blocked",
+      "evidence": "Manual device validation has not been completed yet"
+    }
+  ],
+  "blockers": [
+    "Production release should wait for real Android wallet authorize/sign validation"
+  ],
+  "manual_gates": [
+    {
+      "gate": "Android device + Mock MWA Wallet end-to-end validation",
+      "status": "pending"
+    }
+  ],
+  "ship_recommendation": "do-not-ship",
+  "follow_up": [
+    "Run manual Android wallet validation and capture evidence in a release log"
+  ]
+}

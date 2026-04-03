@@ -1,0 +1,43 @@
+{
+  "command": "/ship-release",
+  "status": "blocked",
+  "phase": "review",
+  "goal": "Determine whether the wallet-auth entry flow is ready for production rollout",
+  "scope": [
+    "lib/",
+    "ios/",
+    "android/"
+  ],
+  "runtime_lanes": [
+    "mixed",
+    "flutter",
+    "web3"
+  ],
+  "plan_steps": [
+    "List release-critical behaviors",
+    "Run repository verification",
+    "Review unresolved wallet happy-path validation gaps"
+  ],
+  "touched_files": [],
+  "verification": [
+    {
+      "name": "./.flutter-sdk/bin/flutter analyze",
+      "result": "pass",
+      "evidence": "No issues found"
+    },
+    {
+      "name": "./.flutter-sdk/bin/flutter test",
+      "result": "pass",
+      "evidence": "All tests passed"
+    },
+    {
+      "name": "Android Mock MWA Wallet device validation",
+      "result": "not-run",
+      "evidence": "Manual device verification still pending"
+    }
+  ],
+  "blockers": [
+    "Production release should wait for real Android wallet happy-path validation"
+  ],
+  "updated_at": "2026-04-01T14:15:00Z"
+}
