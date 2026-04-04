@@ -1,4 +1,4 @@
-package com.example.lover_cl
+package com.club.clubber
 
 import io.flutter.embedding.android.FlutterActivity
 

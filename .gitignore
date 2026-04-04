@@ -19,3 +19,7 @@ ios/.symlinks/
 .tmp-home/
 .flutter-plugins-dependencies
 android/local.properties
+*.iml
+android/.kotlin/
+ios/com.apple.DeveloperTools/
+config/local.json

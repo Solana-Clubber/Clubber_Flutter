@@ -12,8 +12,6 @@ import '../utils/formatters.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_badge.dart';
 import 'club_detail_screen.dart';
-
-const _naverMapClientId = String.fromEnvironment('NAVER_MAP_CLIENT_ID');
 const _mapCenterLat = 37.5445;
 const _mapCenterLng = 126.986;
 
@@ -183,15 +181,12 @@ class _MapSurface extends StatelessWidget {
   final String selectedClubId;
   final ValueChanged<String> onClubSelected;
 
-  bool get _canUseNaverMap =>
-      (Platform.isAndroid || Platform.isIOS) && _naverMapClientId.isNotEmpty;
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: naverMapAuthFailedNotifier,
       builder: (context, authFailed, _) {
-        final canUseMap = _canUseNaverMap && authFailed == null;
+        final canUseMap = (Platform.isAndroid || Platform.isIOS) && authFailed == null;
         return canUseMap
             ? _NaverClubMap(clubs: clubs, onClubSelected: onClubSelected)
             : _FallbackMap(

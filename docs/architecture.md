@@ -54,7 +54,7 @@ UI (screens/widgets)
 ### 4) 플러그인 및 네이티브 경계
 주요 파일:
 - `android/app/src/main/AndroidManifest.xml`
-- `android/app/src/main/kotlin/com/example/lover_cl/MainActivity.kt`
+- `android/app/src/main/kotlin/com/club/clubber/MainActivity.kt`
 
 책임:
 - Android Activity result bridge

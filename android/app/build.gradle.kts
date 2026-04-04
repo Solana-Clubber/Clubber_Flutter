@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lover_cl"
+    namespace = "com.club.clubber"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
