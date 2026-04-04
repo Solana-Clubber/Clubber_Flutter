@@ -13,6 +13,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
   solana_mobile_client: 0.1.2
+  http: ^1.2.1
+  web_socket_channel: ^3.0.1
 
 dev_dependencies:
   flutter_test:
