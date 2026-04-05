@@ -45,18 +45,28 @@ class AcrResult {
     if (spotifyTrackId != null && spotifyTrackId!.isNotEmpty) {
       if (spotifyTrackId == requestedTrackId) return true;
     }
-    // Tier 2: Normalized title + artist match
-    if (title != null && artist != null) {
-      final normRecognizedTitle = _normalize(title!);
-      final normRecognizedArtist = _normalize(artist!);
-      final normRequestedTitle = _normalize(requestedTitle);
-      final normRequestedArtist = _normalize(requestedArtist);
-      if (normRecognizedTitle == normRequestedTitle &&
-          normRecognizedArtist == normRequestedArtist) {
-        return true;
+    // Tier 2: Normalized title match (fuzzy, ignores version suffixes)
+    if (title != null) {
+      final normRecognized = _stripVersions(_normalize(title!));
+      final normRequested = _stripVersions(_normalize(requestedTitle));
+      // Either contains the other → match (handles "Shape of You" vs "Shape of You Instrumental")
+      if (normRecognized.isNotEmpty && normRequested.isNotEmpty) {
+        if (normRecognized == normRequested ||
+            normRecognized.contains(normRequested) ||
+            normRequested.contains(normRecognized)) {
+          return true;
+        }
       }
     }
     return false;
+  }
+
+  static String _stripVersions(String s) {
+    // Remove common suffixes that ACRCloud may add
+    return s
+        .replaceAll(RegExp(r'\b(instrumental|remix|cover|acoustic|karaoke|live|remastered|radio edit|extended|version)\b'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   static String _normalize(String s) {

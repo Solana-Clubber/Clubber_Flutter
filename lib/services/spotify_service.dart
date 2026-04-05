@@ -54,6 +54,27 @@ class SpotifyService {
     return _accessToken!;
   }
 
+  /// Look up a Spotify track by its ID. Returns null if not found.
+  Future<SpotifyTrack?> getTrackById(String trackId) async {
+    try {
+      final token = await _getAccessToken();
+      final uri = Uri.parse('https://api.spotify.com/v1/tracks/$trackId');
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) {
+        debugPrint('[SpotifyService] getTrackById $trackId: ${response.statusCode}');
+        return null;
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return SpotifyTrack.fromSpotifyJson(data);
+    } catch (e) {
+      debugPrint('[SpotifyService] getTrackById error: $e');
+      return null;
+    }
+  }
+
   Future<List<SpotifyTrack>> searchTracks(
     String query, {
     int limit = 10,

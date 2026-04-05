@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../providers/app_providers.dart';
 import '../services/acr_cloud_service.dart';
 import '../services/local_config_loader.dart';
+import '../services/spotify_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/clubber_card.dart';
@@ -131,16 +132,23 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
         .toList();
     debugPrint('[DjMode] accepted escrows: ${accepted.length}');
 
+    // Look up title from Spotify API for each accepted track
     for (final account in accepted) {
-      if (acrResult.matchesTrack(
-        account.trackId,
-        account.trackId,
-        '',
-      )) {
+      String title = account.trackId;
+      String artist = '';
+      final track = await SpotifyService.instance.getTrackById(account.trackId);
+      if (track != null) {
+        title = track.name;
+        artist = track.artist;
+      }
+      debugPrint('[DjMode] checking match: trackId=${account.trackId} title="$title" artist="$artist" vs recognized="${acrResult.title}"');
+      if (acrResult.matchesTrack(account.trackId, title, artist)) {
+        debugPrint('[DjMode] MATCH FOUND! Settling escrow...');
         await _settleOnChain(account);
         return;
       }
     }
+    debugPrint('[DjMode] no match found for recognized track');
 
     final localAccepted = ref.read(clubAppStoreProvider).acceptedRequests;
     for (final req in localAccepted) {
@@ -155,6 +163,83 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
         );
         ref.read(clubAppStoreProvider).settleRequest(req.id);
         return;
+      }
+    }
+  }
+
+  Future<void> _acceptOnChain(EscrowAccount account) async {
+    final escrowService = await ref.read(escrowServiceProvider.future);
+    if (escrowService == null) return;
+    final session = ref.read(rootShellViewModelProvider).walletSession;
+    if (session == null) return;
+    try {
+      final escrowPda = await escrowService.deriveEscrowPda(
+        account.user, account.dj, account.trackId,
+      );
+      final txBytes = await escrowService.buildAcceptRequestTx(
+        djPubkey: session.publicKeyBase58,
+        escrowPda: escrowPda,
+      );
+      final walletService = ref.read(solanaMobileWalletServiceProvider);
+      final signedTx = await walletService.signAndSendTransaction(
+        session, Uint8List.fromList(txBytes),
+      );
+      if (!mounted) return;
+      if (signedTx != null) {
+        final txSig = await escrowService.sendSignedTransaction(
+          Uint8List.fromList(signedTx),
+        );
+        debugPrint('[DjMode] on-chain accept TX: $txSig');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('수락 완료: ${txSig.substring(0, 16)}…')),
+        );
+        await _fetchOnChainRequests();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('수락 오류: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectOnChain(EscrowAccount account) async {
+    final escrowService = await ref.read(escrowServiceProvider.future);
+    if (escrowService == null) return;
+    final session = ref.read(rootShellViewModelProvider).walletSession;
+    if (session == null) return;
+    try {
+      final escrowPda = await escrowService.deriveEscrowPda(
+        account.user, account.dj, account.trackId,
+      );
+      final txBytes = await escrowService.buildRejectRequestTx(
+        djPubkey: session.publicKeyBase58,
+        escrowPda: escrowPda,
+        userPubkey: account.user,
+      );
+      final walletService = ref.read(solanaMobileWalletServiceProvider);
+      final signedTx = await walletService.signAndSendTransaction(
+        session, Uint8List.fromList(txBytes),
+      );
+      if (!mounted) return;
+      if (signedTx != null) {
+        final txSig = await escrowService.sendSignedTransaction(
+          Uint8List.fromList(signedTx),
+        );
+        debugPrint('[DjMode] on-chain reject TX: $txSig');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('거절 완료: ${txSig.substring(0, 16)}…')),
+        );
+        await _fetchOnChainRequests();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('거절 오류: $e')),
+        );
       }
     }
   }
@@ -178,14 +263,19 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
         userPubkey: account.user,
       );
       final walletService = ref.read(solanaMobileWalletServiceProvider);
-      final sig = await walletService.signAndSendTransaction(
+      final signedTx = await walletService.signAndSendTransaction(
         session,
         Uint8List.fromList(txBytes),
       );
       if (!mounted) return;
-      if (sig != null) {
+      if (signedTx != null) {
+        final txSig = await escrowService.sendSignedTransaction(
+          Uint8List.fromList(signedTx),
+        );
+        debugPrint('[DjMode] settle TX sent: $txSig');
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('자동 정산 완료!')),
+          SnackBar(content: Text('자동 정산 완료: ${txSig.substring(0, 16)}…')),
         );
         await _fetchOnChainRequests();
       }
@@ -199,9 +289,11 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
   }
 
   Future<void> _acceptRequest(SongRequest request) async {
+    debugPrint('[DjMode] _acceptRequest called for ${request.id} trackId=${request.trackId} escrowPda=${request.escrowPda}');
     final escrowService = await ref.read(escrowServiceProvider.future);
 
     if (escrowService == null) {
+      debugPrint('[DjMode] escrowService null, falling back to local accept');
       ref.read(clubAppStoreProvider).acceptRequestByDj(
             request.id,
             djMessage: '좋아요. 이번 블록 안에 반영할게요.',
@@ -218,23 +310,33 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
     try {
       final escrowPda = request.escrowPda;
       if (escrowPda == null || escrowPda.isEmpty) {
+        debugPrint('[DjMode] escrowPda null/empty, falling back to local accept');
         ref.read(clubAppStoreProvider).acceptRequestByDj(request.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('DJ 수락 완료 (로컬 mock - 온체인 없음).')),
+        );
         return;
       }
+      debugPrint('[DjMode] building accept TX for escrow=$escrowPda');
       final txBytes = await escrowService.buildAcceptRequestTx(
         djPubkey: session.publicKeyBase58,
         escrowPda: escrowPda,
       );
       final walletService = ref.read(solanaMobileWalletServiceProvider);
-      final sig = await walletService.signAndSendTransaction(
+      final signedTx = await walletService.signAndSendTransaction(
         session,
         Uint8List.fromList(txBytes),
       );
       if (!mounted) return;
-      if (sig != null) {
+      if (signedTx != null) {
+        final txSig = await escrowService.sendSignedTransaction(
+          Uint8List.fromList(signedTx),
+        );
+        debugPrint('[DjMode] accept TX sent: $txSig');
         ref.read(clubAppStoreProvider).acceptRequestByDj(request.id);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('수락 완료.')),
+          SnackBar(content: Text('수락 완료: ${txSig.substring(0, 16)}…')),
         );
         await _fetchOnChainRequests();
       }
@@ -402,7 +504,43 @@ class _DjApprovalScreenState extends ConsumerState<DjApprovalScreen> {
             ..._onChainRequests.map(
               (account) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _OnChainRow(account: account),
+                child: Column(
+                  children: [
+                    _OnChainRow(account: account),
+                    if (account.status == EscrowStatus.pending) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _acceptOnChain(account),
+                              icon: const Icon(Icons.check, size: 16,
+                                  color: AppTheme.green),
+                              label: const Text('Accept',
+                                  style: TextStyle(color: AppTheme.green)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.green),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _rejectOnChain(account),
+                              icon: const Icon(Icons.close, size: 16,
+                                  color: AppTheme.red),
+                              label: const Text('Reject',
+                                  style: TextStyle(color: AppTheme.red)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.red),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
