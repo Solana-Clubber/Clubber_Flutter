@@ -1,9 +1,9 @@
 enum SongRequestStatus {
-  pendingDjApproval,
-  awaitingUserApproval,
-  readyForPayment,
-  queued,
+  pending,
+  accepted,
   rejected,
+  settled,
+  timedOut,
 }
 
 class SongRequest {
@@ -14,11 +14,15 @@ class SongRequest {
     required this.artistName,
     required this.requesterName,
     required this.requestedAt,
-    required this.offeredPriceWon,
+    required this.amountLamports,
     required this.status,
+    required this.trackId,
+    required this.userPubkey,
+    required this.djPubkey,
     this.note = '',
-    this.finalPriceWon,
     this.djMessage,
+    this.escrowPda,
+    this.timeoutAt,
   });
 
   final String id;
@@ -28,12 +32,14 @@ class SongRequest {
   final String requesterName;
   final String note;
   final DateTime requestedAt;
-  final int offeredPriceWon;
-  final int? finalPriceWon;
+  final int amountLamports;
   final String? djMessage;
   final SongRequestStatus status;
-
-  int get payableAmountWon => finalPriceWon ?? offeredPriceWon;
+  final String trackId;
+  final String userPubkey;
+  final String djPubkey;
+  final String? escrowPda;
+  final DateTime? timeoutAt;
 
   SongRequest copyWith({
     String? id,
@@ -43,12 +49,17 @@ class SongRequest {
     String? requesterName,
     String? note,
     DateTime? requestedAt,
-    int? offeredPriceWon,
-    int? finalPriceWon,
-    bool clearFinalPriceWon = false,
+    int? amountLamports,
     String? djMessage,
     bool clearDjMessage = false,
     SongRequestStatus? status,
+    String? trackId,
+    String? userPubkey,
+    String? djPubkey,
+    String? escrowPda,
+    bool clearEscrowPda = false,
+    DateTime? timeoutAt,
+    bool clearTimeoutAt = false,
   }) {
     return SongRequest(
       id: id ?? this.id,
@@ -58,12 +69,14 @@ class SongRequest {
       requesterName: requesterName ?? this.requesterName,
       note: note ?? this.note,
       requestedAt: requestedAt ?? this.requestedAt,
-      offeredPriceWon: offeredPriceWon ?? this.offeredPriceWon,
-      finalPriceWon: clearFinalPriceWon
-          ? null
-          : (finalPriceWon ?? this.finalPriceWon),
+      amountLamports: amountLamports ?? this.amountLamports,
       djMessage: clearDjMessage ? null : (djMessage ?? this.djMessage),
       status: status ?? this.status,
+      trackId: trackId ?? this.trackId,
+      userPubkey: userPubkey ?? this.userPubkey,
+      djPubkey: djPubkey ?? this.djPubkey,
+      escrowPda: clearEscrowPda ? null : (escrowPda ?? this.escrowPda),
+      timeoutAt: clearTimeoutAt ? null : (timeoutAt ?? this.timeoutAt),
     );
   }
 }

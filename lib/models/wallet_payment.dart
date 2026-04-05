@@ -6,9 +6,10 @@ class WalletPayment {
     required this.requestId,
     required this.clubId,
     required this.label,
-    required this.amountWon,
+    required this.amountLamports,
     required this.createdAt,
     required this.status,
+    required this.txSignature,
     this.reference = '',
     this.settlementRail = '',
     this.note = '',
@@ -18,9 +19,10 @@ class WalletPayment {
   final String requestId;
   final String clubId;
   final String label;
-  final int amountWon;
+  final int amountLamports;
   final DateTime createdAt;
   final WalletPaymentStatus status;
+  final String txSignature;
   final String reference;
   final String settlementRail;
   final String note;

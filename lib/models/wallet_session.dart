@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../utils/borsh_codec.dart';
+
 class WalletSession {
   const WalletSession({
     required this.authToken,
@@ -27,6 +29,7 @@ class WalletSession {
   final DateTime? lastVerifiedAt;
 
   Uint8List get publicKey => base64Decode(publicKeyBase64);
+  String get publicKeyBase58 => base58Encode(publicKey);
   Uint8List get signedMessage => base64Decode(signedMessageBase64);
   Uint8List get signature => base64Decode(signatureBase64);
 
