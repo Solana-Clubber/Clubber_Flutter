@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../theme/app_theme.dart';
-import '../utils/formatters.dart';
 import 'section_card.dart';
 import 'status_badge.dart';
 
@@ -54,14 +53,6 @@ class VenueCard extends StatelessWidget {
               StatusBadge(
                 label: '도보 ${club.walkingMinutes}분',
                 color: AppTheme.lime,
-              ),
-              StatusBadge(
-                label: '민트 ${formatWon(club.mintPriceWon)}',
-                color: AppTheme.gold,
-              ),
-              StatusBadge(
-                label: '정산풀 ${formatCompactWon(club.creatorPayoutPoolWon)}',
-                color: AppTheme.cyan,
               ),
               StatusBadge(
                 label: eligibility.state.label,
