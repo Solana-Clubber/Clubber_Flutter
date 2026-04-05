@@ -75,8 +75,11 @@ void main() {
           artistName: 'Justice',
           requesterName: 'Verifier',
           requestedAt: DateTime(2026, 3, 29, 21),
-          offeredPriceWon: 30000,
-          status: SongRequestStatus.readyForPayment,
+          amountLamports: 100000000,
+          status: SongRequestStatus.accepted,
+          trackId: 'spotify-genesis-id',
+          userPubkey: '11111111111111111111111111111111',
+          djPubkey: '22222222222222222222222222222222',
         ),
       );
 

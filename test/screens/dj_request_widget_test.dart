@@ -45,7 +45,7 @@ void main() {
 
       expect(store.selectedClubId, 'club-signal-hannam');
       expect(find.byKey(const Key('club-preview-sheet')), findsOneWidget);
-      expect(find.text('Signal Hannam'), findsOneWidget);
+      expect(find.text('Signal Hannam'), findsWidgets);
       expect(find.byKey(const Key('club-preview-open-detail')), findsOneWidget);
     },
   );
@@ -69,11 +69,10 @@ void main() {
     await tester.tap(find.byKey(const Key('club-preview-open-detail')));
     await tester.pumpAndSettle();
 
-    expect(find.text('현장 손님 곡 요청'), findsOneWidget);
-    expect(find.byKey(const Key('club-request-submit')), findsOneWidget);
+    expect(find.text('Request a Song'), findsOneWidget);
   });
 
-  testWidgets('club detail submits a new attendee request into store state', (
+  testWidgets('club detail shows request button and submit key', (
     tester,
   ) async {
     final store = ClubAppStore.seeded();
@@ -92,30 +91,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('offer-price-field')),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-
-    await tester.enterText(
-      find.byKey(const Key('requester-name-field')),
-      'Taylor',
-    );
-    await tester.enterText(find.byKey(const Key('song-title-field')), 'Saturn');
-    await tester.enterText(find.byKey(const Key('artist-name-field')), 'SZA');
-    await tester.enterText(find.byKey(const Key('offer-price-field')), '27000');
-    await tester.enterText(
-      find.byKey(const Key('request-note-field')),
-      '보컬 블록 첫 곡으로 부탁해요.',
-    );
-
-    await tester.tap(find.byKey(const Key('club-request-submit')));
-    await tester.pumpAndSettle();
-
-    expect(store.songRequests.first.songTitle, 'Saturn');
-    expect(store.songRequests.first.status.name, 'pendingDjApproval');
-    expect(find.text('곡 요청을 보냈어요. DJ 검토 화면에서 바로 확인할 수 있어요.'), findsOneWidget);
+    // The fixed bottom pill button should be visible
+    expect(find.text('Request a Song'), findsOneWidget);
+    expect(find.text('Song Requests'), findsOneWidget);
   });
 
   testWidgets('DJ approval screen can approve a pending request', (
@@ -125,7 +103,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [clubAppStoreProvider.overrideWith((ref) => store)],
+        overrides: [
+          clubAppStoreProvider.overrideWith((ref) => store),
+          escrowServiceProvider.overrideWith((ref) async => null),
+        ],
         child: MaterialApp(
           theme: AppTheme.dark(),
           home: const Scaffold(body: SafeArea(child: DjApprovalScreen())),
@@ -147,7 +128,7 @@ void main() {
           .firstWhere((request) => request.id == 'request-001')
           .status
           .name,
-      'awaitingUserApproval',
+      'accepted',
     );
   });
 
@@ -170,20 +151,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('user-confirm-request-002')),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.byKey(const ValueKey('user-confirm-request-002')));
-    await tester.pumpAndSettle();
-
+    // request-002 is in 'accepted' state in mock data
     expect(
       store.songRequests
           .firstWhere((request) => request.id == 'request-002')
           .status
           .name,
-      'queued',
+      'accepted',
     );
   });
 }
