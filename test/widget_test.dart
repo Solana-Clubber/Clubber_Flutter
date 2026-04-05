@@ -35,14 +35,10 @@ void main() {
     await tester.tap(find.byKey(const Key('role-select-user')));
     await tester.pumpAndSettle();
 
-    expect(find.text('User shell'), findsOneWidget);
     expect(find.byKey(const Key('map-marker-club-axis-seoul')), findsOneWidget);
     expect(find.byKey(const Key('club-preview-sheet')), findsNothing);
     expect(find.byKey(const Key('nav-user-requests')), findsOneWidget);
-    expect(
-      find.byKey(const Key('nav-user-discovery-selected')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('nav-user-discovery')), findsOneWidget);
     expect(find.byKey(const Key('nav-dj-approval')), findsNothing);
   });
 
@@ -61,13 +57,13 @@ void main() {
     await tester.tap(find.byKey(const Key('connect-wallet-button')));
     await tester.pump();
 
-    expect(find.text('지갑 연결 중…'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
 
     cancelledAttempt.complete(null);
     await tester.pumpAndSettle();
 
     expect(find.text('지갑 승인이 취소되었거나 연결이 완료되지 않았습니다.'), findsOneWidget);
-    expect(find.text('Solana wallet 연결'), findsOneWidget);
+    expect(find.byKey(const Key('connect-wallet-button')), findsOneWidget);
 
     walletService.onConnect = null;
 
@@ -96,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Timed out waiting for wallet approval.'), findsOneWidget);
-    expect(find.text('Solana wallet 연결'), findsOneWidget);
+    expect(find.byKey(const Key('connect-wallet-button')), findsOneWidget);
 
     walletService.onConnect = null;
 
@@ -124,8 +120,7 @@ void main() {
       await tester.tap(find.byKey(const Key('club-preview-open-detail')));
       await tester.pumpAndSettle();
 
-      expect(find.text('현장 손님 곡 요청'), findsOneWidget);
-      expect(find.byKey(const Key('club-request-submit')), findsOneWidget);
+      expect(find.text('Request a Song'), findsOneWidget);
     },
   );
 
@@ -154,9 +149,9 @@ void main() {
     await tester.tap(find.byKey(const Key('dj-onboarding-submit')));
     await tester.pumpAndSettle();
 
-    expect(find.text('DJ shell'), findsOneWidget);
-    expect(find.text('DJ approval lane'), findsOneWidget);
-    expect(find.textContaining('관객 최종 승인까지 이어지는 요청 운영 화면입니다.'), findsOneWidget);
+    expect(find.text('DJ Mode'), findsOneWidget);
+    expect(find.byKey(const Key('role-switch-button')), findsOneWidget);
+    expect(find.byKey(const Key('disconnect-wallet-button')), findsOneWidget);
     expect(find.byKey(const Key('nav-user-discovery')), findsNothing);
     expect(find.byKey(const Key('nav-user-requests')), findsNothing);
   });

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'clubber_card.dart';
+
+/// Legacy wrapper — delegates to [ClubberCard].
 class SectionCard extends StatelessWidget {
   const SectionCard({
     required this.child,
@@ -12,8 +15,6 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(padding: padding, child: child),
-    );
+    return ClubberCard(padding: padding, child: child);
   }
 }

@@ -1,6 +1,9 @@
 .dart_tool/
 .packages
 build/
+# Release signing - never commit
+android/key.properties
+android/app/*.jks
 .pub/
 .pub-cache/
 .idea/
@@ -23,3 +26,4 @@ android/local.properties
 android/.kotlin/
 ios/com.apple.DeveloperTools/
 config/local.json
+.omc/

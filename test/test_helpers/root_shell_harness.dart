@@ -1,11 +1,12 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lover_cl/app.dart';
 import 'package:lover_cl/models/models.dart';
 import 'package:lover_cl/providers/app_providers.dart';
+import 'package:lover_cl/screens/root_shell.dart';
 import 'package:lover_cl/services/dj_club_authorization_service.dart';
 import 'package:lover_cl/services/solana_mobile_wallet_service.dart';
 import 'package:lover_cl/services/wallet_session_store.dart';
+import 'package:lover_cl/theme/app_theme.dart';
 
 Widget buildRootShellHarness({
   HarnessWalletService? walletService,
@@ -17,7 +18,7 @@ Widget buildRootShellHarness({
   final resolvedWalletSessionStore =
       walletSessionStore ?? InMemoryWalletSessionStore();
 
-  return ClubberApp(
+  return ProviderScope(
     overrides: [
       solanaMobileWalletServiceProvider.overrideWithValue(
         resolvedWalletService,
@@ -29,6 +30,10 @@ Widget buildRootShellHarness({
         ),
       ...overrides,
     ],
+    child: MaterialApp(
+      theme: AppTheme.dark(),
+      home: const RootShell(),
+    ),
   );
 }
 

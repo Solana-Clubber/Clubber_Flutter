@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/acr_cloud_service.dart';
 import '../services/dj_club_authorization_service.dart';
+import '../services/escrow_service.dart';
+import '../services/local_config_loader.dart';
 import '../services/solana_mobile_wallet_service.dart';
 import '../services/wallet_session_store.dart';
 import '../state/club_app_store.dart';
@@ -34,4 +37,17 @@ final rootShellViewModelProvider = ChangeNotifierProvider<RootShellViewModel>((
     walletSessionStore: ref.watch(walletSessionStoreProvider),
     djClubAuthorizationService: ref.watch(djClubAuthorizationServiceProvider),
   );
+});
+
+/// Async provider that loads config then creates EscrowService.
+/// Returns null if programId is empty (no program deployed yet).
+final escrowServiceProvider = FutureProvider<EscrowService?>((ref) async {
+  final config = await loadLocalConfig();
+  if (config.programId.isEmpty) return null;
+  return EscrowService(programId: config.programId, rpcUrl: config.rpcUrl);
+});
+
+/// AcrCloudService singleton — initialized lazily on first use in screens.
+final acrCloudServiceProvider = Provider<AcrCloudService>((ref) {
+  return AcrCloudService();
 });

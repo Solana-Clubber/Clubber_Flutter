@@ -23,6 +23,15 @@ String formatCompactWon(int amountWon) {
   return formatWon(amountWon);
 }
 
+/// Formats lamports as a SOL amount string, e.g. "0.1 SOL"
+String formatSol(int lamports) {
+  final sol = lamports / 1e9;
+  if (sol == sol.truncateToDouble()) {
+    return '${sol.toStringAsFixed(0)} SOL';
+  }
+  return '${sol.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '')} SOL';
+}
+
 String formatDateTime(DateTime value) {
   final month = value.month.toString().padLeft(2, '0');
   final day = value.day.toString().padLeft(2, '0');

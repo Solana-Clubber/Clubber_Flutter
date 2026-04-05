@@ -12,14 +12,17 @@ void main() {
         requesterName: '',
         songTitle: 'Levels',
         artistName: 'Avicii',
-        offeredPriceWon: 30000,
+        amountLamports: 100000000,
+        trackId: 'spotify-track-id',
+        userPubkey: '11111111111111111111111111111111',
+        djPubkey: '22222222222222222222222222222222',
       );
 
       expect(result.success, isFalse);
       expect(store.songRequests.length, 3);
     });
 
-    test('submitSongRequest creates a DJ approval request', () {
+    test('submitSongRequest creates a pending request', () {
       final store = ClubAppStore.seeded();
 
       final result = store.submitSongRequest(
@@ -27,39 +30,41 @@ void main() {
         requesterName: 'Tester',
         songTitle: 'Levels',
         artistName: 'Avicii',
-        offeredPriceWon: 30000,
+        amountLamports: 100000000,
+        trackId: 'spotify-track-id',
+        userPubkey: '11111111111111111111111111111111',
+        djPubkey: '22222222222222222222222222222222',
       );
 
       expect(result.success, isTrue);
-      expect(store.songRequests.first.status, SongRequestStatus.pendingDjApproval);
+      expect(store.songRequests.first.status, SongRequestStatus.pending);
       expect(store.songRequests.first.songTitle, 'Levels');
     });
 
-    test('DJ approval moves request to awaiting user approval', () {
+    test('DJ accept moves request to accepted', () {
       final store = ClubAppStore.seeded();
 
-      final approved = store.approveRequestByDj(
+      final accepted = store.acceptRequestByDj(
         'request-001',
-        finalPriceWon: 32000,
         djMessage: '다음 블록에서 가능해요.',
       );
 
-      expect(approved, isTrue);
+      expect(accepted, isTrue);
       expect(
         store.songRequests.firstWhere((item) => item.id == 'request-001').status,
-        SongRequestStatus.awaitingUserApproval,
+        SongRequestStatus.accepted,
       );
     });
 
-    test('user confirmation moves request to fully approved queue', () {
+    test('settle moves accepted request to settled', () {
       final store = ClubAppStore.seeded();
 
-      final confirmed = store.confirmRequestByUser('request-002');
+      final settled = store.settleRequest('request-002');
 
-      expect(confirmed, isTrue);
+      expect(settled, isTrue);
       expect(
         store.songRequests.firstWhere((item) => item.id == 'request-002').status,
-        SongRequestStatus.queued,
+        SongRequestStatus.settled,
       );
     });
 

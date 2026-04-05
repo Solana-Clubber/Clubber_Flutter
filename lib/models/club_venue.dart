@@ -14,9 +14,7 @@ class ClubVenue {
     required this.mapPositionY,
     required this.residentArtist,
     required this.liveSignalSummary,
-    required this.coverChargeWon,
-    required this.creatorPayoutPoolWon,
-    required this.mintPriceWon,
+    this.djWalletAddress = '',
     this.spotlightMoments = const <String>[],
     this.amenities = const <String>[],
     this.tags = const <String>[],
@@ -36,9 +34,7 @@ class ClubVenue {
   final double mapPositionY;
   final String residentArtist;
   final String liveSignalSummary;
-  final int coverChargeWon;
-  final int creatorPayoutPoolWon;
-  final int mintPriceWon;
+  final String djWalletAddress;
   final List<String> spotlightMoments;
   final List<String> amenities;
   final List<String> tags;
@@ -58,9 +54,7 @@ class ClubVenue {
     double? mapPositionY,
     String? residentArtist,
     String? liveSignalSummary,
-    int? coverChargeWon,
-    int? creatorPayoutPoolWon,
-    int? mintPriceWon,
+    String? djWalletAddress,
     List<String>? spotlightMoments,
     List<String>? amenities,
     List<String>? tags,
@@ -80,10 +74,7 @@ class ClubVenue {
       mapPositionY: mapPositionY ?? this.mapPositionY,
       residentArtist: residentArtist ?? this.residentArtist,
       liveSignalSummary: liveSignalSummary ?? this.liveSignalSummary,
-      coverChargeWon: coverChargeWon ?? this.coverChargeWon,
-      creatorPayoutPoolWon:
-          creatorPayoutPoolWon ?? this.creatorPayoutPoolWon,
-      mintPriceWon: mintPriceWon ?? this.mintPriceWon,
+      djWalletAddress: djWalletAddress ?? this.djWalletAddress,
       spotlightMoments: spotlightMoments ?? this.spotlightMoments,
       amenities: amenities ?? this.amenities,
       tags: tags ?? this.tags,

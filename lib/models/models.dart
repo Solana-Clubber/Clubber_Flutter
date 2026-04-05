@@ -1,5 +1,7 @@
 export 'artist_settlement.dart';
 export 'club_venue.dart';
+export 'escrow_account.dart';
+export 'spotify_track.dart';
 export 'location_preset.dart';
 export 'mint_eligibility.dart';
 export 'song_request.dart';

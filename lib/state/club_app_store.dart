@@ -33,9 +33,14 @@ class ClubAppStore extends ChangeNotifier {
   String get selectedClubId => _selectedClubId;
   ClubVenue get selectedClub => clubById(_selectedClubId);
 
-  int get pendingDjCount => _songRequests.where((request) => request.status == SongRequestStatus.pendingDjApproval).length;
-  int get awaitingUserCount => _songRequests.where((request) => request.status == SongRequestStatus.awaitingUserApproval).length;
-  int get approvedCount => _songRequests.where((request) => request.status == SongRequestStatus.queued).length;
+  int get pendingCount => _songRequests.where((r) => r.status == SongRequestStatus.pending).length;
+  int get acceptedCount => _songRequests.where((r) => r.status == SongRequestStatus.accepted).length;
+  int get settledCount => _songRequests.where((r) => r.status == SongRequestStatus.settled).length;
+
+  // Legacy count getters for screen compatibility
+  int get pendingDjCount => pendingCount;
+  int get awaitingUserCount => acceptedCount;
+  int get approvedCount => settledCount;
 
   ClubVenue clubById(String clubId) {
     return _clubs.firstWhere((club) => club.id == clubId);
@@ -45,21 +50,37 @@ class ClubAppStore extends ChangeNotifier {
     return songRequests.where((request) => request.clubId == clubId).toList(growable: false);
   }
 
-  List<SongRequest> get pendingDjRequests => songRequests
-      .where((request) => request.status == SongRequestStatus.pendingDjApproval)
+  List<SongRequest> get pendingRequests => songRequests
+      .where((r) => r.status == SongRequestStatus.pending)
       .toList(growable: false);
 
-  List<SongRequest> get awaitingUserRequests => songRequests
-      .where((request) => request.status == SongRequestStatus.awaitingUserApproval)
+  List<SongRequest> get acceptedRequests => songRequests
+      .where((r) => r.status == SongRequestStatus.accepted)
       .toList(growable: false);
 
-  List<SongRequest> get approvedRequests => songRequests
-      .where((request) => request.status == SongRequestStatus.queued)
+  List<SongRequest> get settledRequests => songRequests
+      .where((r) => r.status == SongRequestStatus.settled)
       .toList(growable: false);
 
   List<SongRequest> get rejectedRequests => songRequests
-      .where((request) => request.status == SongRequestStatus.rejected)
+      .where((r) => r.status == SongRequestStatus.rejected)
       .toList(growable: false);
+
+  List<SongRequest> get timedOutRequests => songRequests
+      .where((r) => r.status == SongRequestStatus.timedOut)
+      .toList(growable: false);
+
+  // Legacy getters kept for screen compatibility during migration
+  List<SongRequest> get pendingDjRequests => pendingRequests;
+  List<SongRequest> get awaitingUserRequests => acceptedRequests;
+  List<SongRequest> get approvedRequests => settledRequests;
+
+  void setDjWalletForClub(String clubId, String walletAddress) {
+    final index = _clubs.indexWhere((c) => c.id == clubId);
+    if (index == -1) return;
+    _clubs[index] = _clubs[index].copyWith(djWalletAddress: walletAddress);
+    notifyListeners();
+  }
 
   int totalRequestsForClub(String clubId) {
     return _songRequests.where((request) => request.clubId == clubId).length;
@@ -68,7 +89,7 @@ class ClubAppStore extends ChangeNotifier {
   int pendingRequestsForClub(String clubId) {
     return _songRequests.where((request) {
       return request.clubId == clubId &&
-          request.status == SongRequestStatus.pendingDjApproval;
+          request.status == SongRequestStatus.pending;
     }).length;
   }
 
@@ -85,7 +106,11 @@ class ClubAppStore extends ChangeNotifier {
     required String requesterName,
     required String songTitle,
     required String artistName,
-    required int offeredPriceWon,
+    required int amountLamports,
+    required String trackId,
+    required String userPubkey,
+    required String djPubkey,
+    String? escrowPda,
     String note = '',
   }) {
     final normalizedName = requesterName.trim();
@@ -99,10 +124,10 @@ class ClubAppStore extends ChangeNotifier {
         message: '이름, 곡 제목, 아티스트는 모두 입력해 주세요.',
       );
     }
-    if (offeredPriceWon < 5000) {
+    if (amountLamports <= 0) {
       return const SongRequestSubmissionResult(
         success: false,
-        message: '제안 금액은 최소 ₩5,000 이상이어야 해요.',
+        message: '금액을 입력해 주세요.',
       );
     }
 
@@ -114,8 +139,12 @@ class ClubAppStore extends ChangeNotifier {
       artistName: normalizedArtist,
       note: normalizedNote,
       requestedAt: DateTime.now(),
-      offeredPriceWon: offeredPriceWon,
-      status: SongRequestStatus.pendingDjApproval,
+      amountLamports: amountLamports,
+      status: SongRequestStatus.pending,
+      trackId: trackId,
+      userPubkey: userPubkey,
+      djPubkey: djPubkey,
+      escrowPda: escrowPda,
       djMessage: 'DJ가 세트 흐름을 검토 중이에요.',
     );
 
@@ -127,18 +156,13 @@ class ClubAppStore extends ChangeNotifier {
     );
   }
 
-  bool approveRequestByDj(
-    String requestId, {
-    int? finalPriceWon,
-    String? djMessage,
-  }) {
+  bool acceptRequestByDj(String requestId, {String? djMessage}) {
     return _updateRequest(
       requestId,
-      (request) => request.status == SongRequestStatus.pendingDjApproval
+      (request) => request.status == SongRequestStatus.pending
           ? request.copyWith(
-              status: SongRequestStatus.awaitingUserApproval,
-              finalPriceWon: finalPriceWon ?? request.offeredPriceWon,
-              djMessage: djMessage ?? 'DJ가 수락했어요. 마지막 확인만 남았어요.',
+              status: SongRequestStatus.accepted,
+              djMessage: djMessage ?? 'DJ가 수락했어요.',
             )
           : request,
     );
@@ -147,8 +171,8 @@ class ClubAppStore extends ChangeNotifier {
   bool rejectRequestByDj(String requestId, {String? djMessage}) {
     return _updateRequest(
       requestId,
-      (request) => request.status == SongRequestStatus.pendingDjApproval ||
-              request.status == SongRequestStatus.awaitingUserApproval
+      (request) => request.status == SongRequestStatus.pending ||
+              request.status == SongRequestStatus.accepted
           ? request.copyWith(
               status: SongRequestStatus.rejected,
               djMessage: djMessage ?? '이번 타임라인에는 맞지 않아 다음 라운드로 넘겼어요.',
@@ -157,16 +181,26 @@ class ClubAppStore extends ChangeNotifier {
     );
   }
 
-  bool confirmRequestByUser(String requestId) {
+  bool settleRequest(String requestId, {String? djMessage}) {
     return _updateRequest(
       requestId,
-      (request) => request.status == SongRequestStatus.awaitingUserApproval
+      (request) => request.status == SongRequestStatus.accepted
           ? request.copyWith(
-              status: SongRequestStatus.queued,
-              djMessage: '양측 승인이 완료되어 플레이 큐에 올랐어요.',
+              status: SongRequestStatus.settled,
+              djMessage: djMessage ?? '정산 완료됐어요.',
             )
           : request,
     );
+  }
+
+  // Legacy method kept for screen compatibility
+  bool approveRequestByDj(String requestId, {int? finalPriceWon, String? djMessage}) {
+    return acceptRequestByDj(requestId, djMessage: djMessage);
+  }
+
+  // Legacy method kept for screen compatibility
+  bool confirmRequestByUser(String requestId) {
+    return settleRequest(requestId);
   }
 
   bool _updateRequest(
