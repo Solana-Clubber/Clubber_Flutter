@@ -13,7 +13,7 @@ class SolanaMobileWalletService {
   static final Uri _identityUri = Uri.parse('https://solana.com');
   static final Uri _iconUri = Uri.parse('favicon.ico');
   static const String _identityName = 'Solana';
-  static const String defaultCluster = 'testnet';
+  static const String defaultCluster = 'devnet';
   static const bool _useIdentityUri = bool.fromEnvironment(
     'SOLANA_WALLET_USE_IDENTITY_URI',
     defaultValue: true,
@@ -152,6 +152,74 @@ class SolanaMobileWalletService {
         () => client.deauthorize(authToken: session.authToken),
         timeout: _sessionStepTimeout,
       );
+    } finally {
+      await scenario.close();
+    }
+  }
+
+  Future<List<int>?> signAndSendTransaction(
+    WalletSession session,
+    Uint8List transactionBytes,
+  ) async {
+    _ensureSupportedPlatform();
+    if (!await LocalAssociationScenario.isAvailable()) {
+      throw const WalletConnectionException('No MWA wallet available.');
+    }
+
+    final scenario = await LocalAssociationScenario.create();
+    try {
+      _logStage('signAndSend:startActivityForResult', 'launch');
+      unawaited(scenario.startActivityForResult(null));
+
+      final client = await _runStep(
+        'signAndSend:start',
+        () => scenario.start(),
+        timeout: _connectStepTimeout,
+      );
+
+      // CRITICAL: Reauthorize with stored auth token
+      _logStage('signAndSend:reauthorize', 'begin');
+      final reauth = await _runStep(
+        'signAndSend:reauthorize',
+        () => client.reauthorize(
+          identityUri: _resolvedIdentityUri,
+          iconUri: _resolvedIconUri,
+          identityName: _resolvedIdentityName,
+          authToken: session.authToken,
+        ),
+        timeout: _connectStepTimeout,
+      );
+      if (reauth == null) {
+        _logStage('signAndSend:reauthorize', 'failed - null result');
+        return null;
+      }
+
+      // Sign the transaction (wallet returns signed TX bytes)
+      final signResult = await _runStep(
+        'signAndSend:signTransactions',
+        () => client.signTransactions(
+          transactions: [transactionBytes],
+        ),
+        timeout: _connectStepTimeout,
+      );
+
+      if (signResult.signedPayloads.isEmpty) {
+        _logStage('signAndSend:result', 'no signed payloads returned');
+        return null;
+      }
+
+      final signedTx = signResult.signedPayloads.first;
+      _logStage('signAndSend:result', 'signed TX=${signedTx.length} bytes');
+      return signedTx;
+    } catch (error, stackTrace) {
+      if (_isCancellationError(error)) {
+        _logStage('signAndSend:cancelled', '$error');
+        debugPrint(stackTrace.toString());
+        return null;
+      }
+      _logStage('signAndSend:error', '$error');
+      debugPrint(stackTrace.toString());
+      rethrow;
     } finally {
       await scenario.close();
     }
