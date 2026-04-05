@@ -447,7 +447,7 @@ class MockSeekerSettlementService implements SeekerSettlementService {
     ];
 
     final benefits = <String>[
-      '민트 가격 ${club.mintPriceWon ~/ 1000}k KRW equivalent',
+      '민트 가격 — devnet SOL',
       'fan reward pool ${settlement.fanRewardPoolWon ~/ 1000}k 공개',
       '${settlement.artistName} 세트 보상 로직 확인 가능',
     ];
@@ -465,7 +465,7 @@ class MockSeekerSettlementService implements SeekerSettlementService {
       eligibilityScore: score,
       mintedSupply: 37 + anchoredReviews,
       totalSupply: 120,
-      mintPriceWon: club.mintPriceWon,
+      mintPriceWon: 0,
       nextRefresh: DateTime.now().add(const Duration(minutes: 14)),
       contractLabel: settlement.contractLabel,
       privacyLabel: proof.privacySummary,

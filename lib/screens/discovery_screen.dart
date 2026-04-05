@@ -8,10 +8,9 @@ import '../models/models.dart';
 import '../providers/app_providers.dart';
 import '../services/naver_map_runtime.dart';
 import '../theme/app_theme.dart';
-import '../utils/formatters.dart';
-import '../widgets/section_card.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/clubber_card.dart';
 import 'club_detail_screen.dart';
+
 const _mapCenterLat = 37.5445;
 const _mapCenterLng = 126.986;
 
@@ -39,16 +38,6 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           onClubSelected: _handleClubSelected,
         ),
         Positioned(
-          top: 16,
-          left: 16,
-          right: 16,
-          child: _DiscoveryHeader(
-            pendingDjCount: store.pendingDjCount,
-            awaitingUserCount: store.awaitingUserCount,
-            approvedCount: store.approvedCount,
-          ),
-        ),
-        Positioned(
           left: 16,
           right: 16,
           bottom: 20,
@@ -58,9 +47,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             switchOutCurve: Curves.easeIn,
             child: _showClubPreview
                 ? _SelectedClubSheet(
+                    key: const Key('club-preview-sheet'),
                     club: selectedClub,
-                    pendingCount: store.pendingRequestsForClub(selectedClub.id),
-                    totalRequests: store.totalRequestsForClub(selectedClub.id),
+                    pendingCount:
+                        store.pendingRequestsForClub(selectedClub.id),
+                    totalRequests:
+                        store.totalRequestsForClub(selectedClub.id),
                     onClose: _closePreview,
                     onOpenClub: () => _openClub(selectedClub.id),
                   )
@@ -73,102 +65,27 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   void _handleClubSelected(String clubId) {
     ref.read(clubAppStoreProvider).selectClub(clubId);
-    if (_showClubPreview) {
-      return;
-    }
+    if (_showClubPreview) return;
     setState(() => _showClubPreview = true);
   }
 
   void _closePreview() {
-    if (!_showClubPreview) {
-      return;
-    }
+    if (!_showClubPreview) return;
     setState(() => _showClubPreview = false);
   }
 
   void _openClub(String clubId) {
     ref.read(clubAppStoreProvider).selectClub(clubId);
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ClubDetailScreen(clubId: clubId)),
+      MaterialPageRoute<void>(
+          builder: (_) => ClubDetailScreen(clubId: clubId)),
     );
   }
 }
 
-class _DiscoveryHeader extends StatelessWidget {
-  const _DiscoveryHeader({
-    required this.pendingDjCount,
-    required this.awaitingUserCount,
-    required this.approvedCount,
-  });
-
-  final int pendingDjCount;
-  final int awaitingUserCount;
-  final int approvedCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  StatusBadge(label: 'Naver-map-first', color: AppTheme.lime),
-                  StatusBadge(label: '라이브 클럽 탐색', color: AppTheme.cyan),
-                  StatusBadge(label: 'DJ 승인 흐름 유지', color: AppTheme.accent),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '서울 DJ 요청 MVP',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '클럽 마커를 눌러 하단 시트에서 분위기와 요청 현황을 확인하고 바로 상세 화면으로 이동하세요.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _MetricPill(
-                label: 'DJ 검토중',
-                value: '$pendingDjCount',
-                color: AppTheme.gold,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MetricPill(
-                label: '사용자 확인',
-                value: '$awaitingUserCount',
-                color: AppTheme.cyan,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MetricPill(
-                label: '최종 승인',
-                value: '$approvedCount',
-                color: AppTheme.lime,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
+// ---------------------------------------------------------------------------
+// Map surface
+// ---------------------------------------------------------------------------
 
 class _MapSurface extends StatelessWidget {
   const _MapSurface({
@@ -186,7 +103,8 @@ class _MapSurface extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: naverMapAuthFailedNotifier,
       builder: (context, authFailed, _) {
-        final canUseMap = (Platform.isAndroid || Platform.isIOS) && authFailed == null;
+        final canUseMap =
+            (Platform.isAndroid || Platform.isIOS) && authFailed == null;
         return canUseMap
             ? _NaverClubMap(clubs: clubs, onClubSelected: onClubSelected)
             : _FallbackMap(
@@ -199,6 +117,10 @@ class _MapSurface extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Club preview bottom card
+// ---------------------------------------------------------------------------
+
 class _SelectedClubSheet extends StatelessWidget {
   const _SelectedClubSheet({
     required this.club,
@@ -206,6 +128,7 @@ class _SelectedClubSheet extends StatelessWidget {
     required this.totalRequests,
     required this.onClose,
     required this.onOpenClub,
+    super.key,
   });
 
   final ClubVenue club;
@@ -216,19 +139,19 @@ class _SelectedClubSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      key: const Key('club-preview-sheet'),
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+    return ClubberCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Drag handle + close
           Row(
             children: [
               Expanded(
                 child: Center(
                   child: Container(
-                    width: 44,
+                    width: 40,
                     height: 4,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.20),
@@ -237,13 +160,15 @@ class _SelectedClubSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                key: const Key('club-preview-close'),
-                onPressed: onClose,
-                icon: const Icon(Icons.close),
+              GestureDetector(
+                onTap: onClose,
+                child: const Icon(Icons.close,
+                    size: 20, color: AppTheme.grey),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Club name + walking time
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -251,63 +176,77 @@ class _SelectedClubSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const StatusBadge(label: '선택한 클럽', color: AppTheme.accent),
-                    const SizedBox(height: 10),
                     Text(
                       club.name,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(color: AppTheme.white),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
-                      club.heroTagline,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                      club.neighborhood,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: AppTheme.grey),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              StatusBadge(
-                label: '도보 ${club.walkingMinutes}분',
-                color: AppTheme.gold,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _MusicStyleBadge(label: club.musicStyle),
+                  const SizedBox(height: 6),
+                  Text(
+                    '도보 ${club.walkingMinutes}분',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppTheme.grey),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(club.liveSignalSummary),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          // Stats row
+          Row(
             children: [
-              StatusBadge(
-                label: '${club.neighborhood} · ${club.musicStyle}',
-                color: AppTheme.cyan,
+              _StatChip(
+                icon: Icons.music_note_rounded,
+                label: '$totalRequests requests',
               ),
-              StatusBadge(
-                label: '대기 ${club.queueEtaMinutes}분',
-                color: AppTheme.gold,
+              const SizedBox(width: 8),
+              _StatChip(
+                icon: Icons.pending_actions_rounded,
+                label: '$pendingCount pending',
               ),
-              StatusBadge(
-                label: '검토중 $pendingCount건 / 전체 $totalRequests건',
-                color: AppTheme.lime,
+              const SizedBox(width: 8),
+              _StatChip(
+                icon: Icons.timer_rounded,
+                label: '${club.queueEtaMinutes}min wait',
               ),
             ],
           ),
           const SizedBox(height: 16),
+          // Buttons
           Row(
             children: [
               Expanded(
                 child: FilledButton(
                   key: const Key('club-preview-open-detail'),
                   onPressed: onOpenClub,
-                  child: const Text('클럽 상세 열기'),
+                  child: const Text('View Club'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton(
                   onPressed: onOpenClub,
-                  child: Text('곡 요청 ${formatWon(club.coverChargeWon)}부터'),
+                  child: const Text('Request Song'),
                 ),
               ),
             ],
@@ -317,6 +256,68 @@ class _SelectedClubSheet extends StatelessWidget {
     );
   }
 }
+
+class _MusicStyleBadge extends StatelessWidget {
+  const _MusicStyleBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.pink.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: AppTheme.pink.withValues(alpha: 0.50), width: 1),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.pink,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.panelRaised,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppTheme.grey),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.grey,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Naver map
+// ---------------------------------------------------------------------------
 
 class _NaverClubMap extends StatefulWidget {
   const _NaverClubMap({required this.clubs, required this.onClubSelected});
@@ -341,9 +342,7 @@ class _NaverClubMapState extends State<_NaverClubMap> {
         ),
       ),
       onMapReady: (controller) async {
-        if (_markersAdded) {
-          return;
-        }
+        if (_markersAdded) return;
         _markersAdded = true;
         final markers = widget.clubs.map((club) {
           final marker = NMarker(
@@ -360,6 +359,10 @@ class _NaverClubMapState extends State<_NaverClubMap> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Fallback map (web / desktop / no API key)
+// ---------------------------------------------------------------------------
 
 class _FallbackMap extends StatelessWidget {
   const _FallbackMap({
@@ -387,19 +390,12 @@ class _FallbackMap extends StatelessWidget {
         builder: (context, constraints) {
           return Stack(
             children: [
-              Positioned(
-                left: 16,
-                right: 16,
-                top: 140,
-                child: Text(
-                  '테스트/미설정 환경용 지도 프리뷰 · 마커를 눌러 하단 클럽 시트를 바꿔요.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
               for (final club in clubs)
                 Positioned(
-                  left: 20 + (constraints.maxWidth - 140) * club.mapPositionX,
-                  top: 220 + (constraints.maxHeight - 420) * club.mapPositionY,
+                  left: 20 +
+                      (constraints.maxWidth - 140) * club.mapPositionX,
+                  top: 140 +
+                      (constraints.maxHeight - 380) * club.mapPositionY,
                   child: _FallbackMarker(
                     club: club,
                     isSelected: club.id == selectedClubId,
@@ -427,59 +423,40 @@ class _FallbackMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.tonalIcon(
+    return GestureDetector(
       key: Key('map-marker-${club.id}'),
-      onPressed: onTap,
-      style: FilledButton.styleFrom(
-        backgroundColor: isSelected
-            ? AppTheme.accent.withValues(alpha: 0.42)
-            : AppTheme.panelRaised.withValues(alpha: 0.90),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        side: BorderSide(
+      onTap: onTap,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.accent
-              : Colors.white.withValues(alpha: 0.18),
+              ? AppTheme.pink.withValues(alpha: 0.30)
+              : AppTheme.panelRaised.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.pink
+                : Colors.white.withValues(alpha: 0.15),
+          ),
         ),
-      ),
-      icon: const Icon(Icons.location_on),
-      label: Text(isSelected ? '${club.name} · 선택됨' : club.name),
-    );
-  }
-}
-
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppTheme.panelRaised.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.30)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 6),
+            Icon(
+              Icons.location_on,
+              size: 14,
+              color:
+                  isSelected ? AppTheme.pink : AppTheme.grey,
+            ),
+            const SizedBox(width: 6),
             Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(color: color),
+              club.name,
+              style: TextStyle(
+                color: isSelected ? AppTheme.white : AppTheme.grey,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -489,7 +466,9 @@ class _MetricPill extends StatelessWidget {
 }
 
 NLatLng _clubLatLng(ClubVenue club) {
-  final latitude = _mapCenterLat + ((club.mapPositionY - 0.5) * 0.18);
-  final longitude = _mapCenterLng + ((club.mapPositionX - 0.5) * 0.24);
+  final latitude =
+      _mapCenterLat + ((club.mapPositionY - 0.5) * 0.18);
+  final longitude =
+      _mapCenterLng + ((club.mapPositionX - 0.5) * 0.24);
   return NLatLng(latitude, longitude);
 }

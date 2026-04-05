@@ -5,8 +5,7 @@ import '../models/models.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 import '../viewmodels/root_shell_view_model.dart';
-import '../widgets/section_card.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/clubber_card.dart';
 import 'discovery_screen.dart';
 import 'requests_screen.dart';
 import 'user_requests_screen.dart';
@@ -20,11 +19,7 @@ class RootShell extends ConsumerWidget {
     final controller = ref.read(rootShellViewModelProvider);
 
     if (viewModel.isInitializing) {
-      return const _FullScreenStatus(
-        title: '지갑 세션 확인 중',
-        description: '저장된 Solana wallet 연결 상태를 복원하고 있어요.',
-        child: CircularProgressIndicator(),
-      );
+      return const _FullScreenLoading();
     }
 
     if (!viewModel.isWalletConnected) {
@@ -34,6 +29,7 @@ class RootShell extends ConsumerWidget {
     return switch (viewModel.selectedRole) {
       AppRole.user => _UserShell(
         viewModel: viewModel,
+        onSwitchRole: controller.clearRoleSelection,
         onDisconnect: controller.disconnectWallet,
       ),
       AppRole.dj =>
@@ -58,45 +54,21 @@ class RootShell extends ConsumerWidget {
   }
 }
 
-class _FullScreenStatus extends StatelessWidget {
-  const _FullScreenStatus({
-    required this.title,
-    required this.description,
-    this.child,
-  });
-
-  final String title;
-  final String description;
-  final Widget? child;
+class _FullScreenLoading extends StatelessWidget {
+  const _FullScreenLoading();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SectionCard(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 12),
-                  Text(description),
-                  if (child != null) ...[
-                    const SizedBox(height: 20),
-                    Center(child: child!),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
+    return const Scaffold(
+      backgroundColor: AppTheme.background,
+      body: Center(
+        child: CircularProgressIndicator(color: AppTheme.pink),
       ),
     );
   }
 }
+
+// ─── Wallet Connection Gate ───────────────────────────────────────────────────
 
 class _WalletConnectionGate extends StatelessWidget {
   const _WalletConnectionGate({required this.viewModel});
@@ -107,89 +79,90 @@ class _WalletConnectionGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUnsupported = !viewModel.isWalletSupported;
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: ListView(
-          key: const Key('wallet-connect-gate'),
-          padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
-          children: [
-            const SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      StatusBadge(
-                        label: 'Wallet required',
-                        color: AppTheme.accent,
-                      ),
-                      StatusBadge(
-                        label: 'Android-first Solana auth',
-                        color: AppTheme.gold,
-                      ),
-                    ],
+        child: Center(
+          child: SingleChildScrollView(
+            key: const Key('wallet-connect-gate'),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                Text(
+                  'CLUBBER',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.pink,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 8,
                   ),
-                  SizedBox(height: 16),
-                  Text('지갑 연결 필요'),
-                  SizedBox(height: 8),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Sign in to continue your nightlife journey',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.grey,
+                  ),
+                ),
+                const SizedBox(height: 64),
+                // Error text
+                if (viewModel.walletError case final error?) ...[
                   Text(
-                    '역할 선택 전에 Solana Mobile Wallet Adapter로 지갑을 연결하고 서명 로그인까지 완료해야 합니다.',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isUnsupported ? '지원 환경 안내' : 'Android wallet sign-in',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isUnsupported
-                        ? '현재 호스트에서는 실제 Android wallet 연결을 열 수 없습니다. Android 기기/에뮬레이터 + Mock MWA Wallet 환경에서 테스트하세요.'
-                        : '연결 시 authorize 기반으로 지갑 세션을 열고, auth token과 지갑 계정 정보를 로컬에 저장합니다.',
-                  ),
-                  const SizedBox(height: 16),
-                  if (viewModel.walletError case final error?) ...[
-                    StatusBadge(label: error, color: AppTheme.danger),
-                    const SizedBox(height: 16),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      key: const Key('connect-wallet-button'),
-                      onPressed:
-                          isUnsupported || viewModel.isAuthenticatingWallet
-                          ? null
-                          : viewModel.connectWallet,
-                      icon: viewModel.isAuthenticatingWallet
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.account_balance_wallet_outlined),
-                      label: Text(
-                        viewModel.isAuthenticatingWallet
-                            ? '지갑 연결 중…'
-                            : 'Solana wallet 연결',
-                      ),
+                    error,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.red,
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
-              ),
+                // Connect button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton(
+                    key: const Key('connect-wallet-button'),
+                    onPressed:
+                        isUnsupported || viewModel.isAuthenticatingWallet
+                        ? null
+                        : viewModel.connectWallet,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.pink,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+                      ),
+                    ),
+                    child: viewModel.isAuthenticatingWallet
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            'Continue with Seeker',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ─── Role Selection ───────────────────────────────────────────────────────────
 
 class _RoleSelectionScreen extends StatelessWidget {
   const _RoleSelectionScreen({
@@ -206,173 +179,146 @@ class _RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final addressLabel =
+        walletSession.accountLabel ?? walletSession.walletAddressPreview;
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
-          children: [
-            SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Wallet badge
+              Row(
                 children: [
-                  const Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      StatusBadge(
-                        label: 'Wallet connected',
-                        color: AppTheme.lime,
-                      ),
-                      StatusBadge(
-                        label: 'One app / two roles',
-                        color: AppTheme.accent,
-                      ),
-                    ],
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.green,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text('입장 역할 선택'),
-                  const SizedBox(height: 8),
+                  const SizedBox(width: 6),
                   Text(
-                    '연결된 지갑 ${walletSession.accountLabel ?? walletSession.walletAddressPreview} · ${walletSession.cluster}. 같은 앱 안에서 관객/ DJ shell을 나눠 사용합니다.',
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    key: const Key('disconnect-wallet-button'),
-                    onPressed: onDisconnect,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('지갑 연결 해제'),
+                    addressLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.grey,
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            _RoleOptionCard(
-              buttonKey: const Key('role-select-user'),
-              icon: Icons.person_pin_circle_outlined,
-              badgeLabel: 'User mode',
-              badgeColor: AppTheme.cyan,
-              title: '관객으로 입장',
-              description:
-                  '지갑 로그인 후 서울 클럽 지도를 탐색하고, 클럽 상세에서 신청곡을 보내고, 내 요청 상태를 확인합니다.',
-              bulletPoints: const [
-                'wallet-auth 후 역할 진입',
-                '맵 중심 클럽 발견',
-                '클럽 상세 / 요청 작성',
-              ],
-              buttonLabel: 'User shell 열기',
-              onPressed: onSelectUser,
-            ),
-            const SizedBox(height: 16),
-            _RoleOptionCard(
-              buttonKey: const Key('role-select-dj'),
-              icon: Icons.headphones_outlined,
-              badgeLabel: 'DJ mode',
-              badgeColor: AppTheme.gold,
-              title: 'DJ로 입장',
-              description:
-                  'DJ 이름 + 클럽 선택 + local/mock club authorization check를 통과한 뒤 승인/거절 운영 화면으로 들어갑니다.',
-              bulletPoints: const [
-                'wallet-auth + DJ onboarding',
-                'mock club roster authorization',
-                '승인/거절 액션',
-              ],
-              buttonLabel: 'DJ onboarding 시작',
-              onPressed: onSelectDj,
-            ),
-          ],
+              const SizedBox(height: 32),
+              Text(
+                'Choose your role',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You can switch roles at any time.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.grey,
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Role cards
+              _RoleCard(
+                buttonKey: const Key('role-select-user'),
+                icon: Icons.person_outline,
+                title: 'Guest',
+                description: 'Explore clubs, discover events, and send song requests.',
+                onTap: onSelectUser,
+              ),
+              const SizedBox(height: 16),
+              _RoleCard(
+                buttonKey: const Key('role-select-dj'),
+                icon: Icons.headphones_outlined,
+                title: 'DJ',
+                description: 'Manage requests, control the queue, and run the night.',
+                onTap: onSelectDj,
+              ),
+              const Spacer(),
+              // Disconnect
+              Center(
+                child: TextButton(
+                  key: const Key('disconnect-wallet-button'),
+                  onPressed: onDisconnect,
+                  child: const Text('Disconnect wallet'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _RoleOptionCard extends StatelessWidget {
-  const _RoleOptionCard({
+class _RoleCard extends StatelessWidget {
+  const _RoleCard({
     required this.buttonKey,
     required this.icon,
-    required this.badgeLabel,
-    required this.badgeColor,
     required this.title,
     required this.description,
-    required this.bulletPoints,
-    required this.buttonLabel,
-    required this.onPressed,
+    required this.onTap,
   });
 
   final Key buttonKey;
   final IconData icon;
-  final String badgeLabel;
-  final Color badgeColor;
   final String title;
   final String description;
-  final List<String> bulletPoints;
-  final String buttonLabel;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return ClubberCard(
+      key: buttonKey,
+      pinkAccent: true,
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppTheme.pink.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: Colors.white),
+                child: Icon(icon, color: AppTheme.pink, size: 26),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StatusBadge(label: badgeLabel, color: badgeColor),
-                    const SizedBox(height: 10),
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(description),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),
+              const Icon(Icons.chevron_right, color: AppTheme.grey, size: 20),
             ],
           ),
-          const SizedBox(height: 16),
-          ...bulletPoints.map(
-            (bullet) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Icon(Icons.circle, size: 8, color: AppTheme.lime),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(bullet)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              key: buttonKey,
-              onPressed: onPressed,
-              child: Text(buttonLabel),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
+
+// ─── DJ Onboarding ────────────────────────────────────────────────────────────
 
 class _DjOnboardingScreen extends ConsumerWidget {
   const _DjOnboardingScreen({
@@ -389,185 +335,335 @@ class _DjOnboardingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final clubs = ref.watch(clubAppStoreProvider).clubs;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('DJ onboarding'),
-        actions: [
-          TextButton.icon(
-            key: const Key('role-switch-button'),
-            onPressed: onSwitchRole,
-            icon: const Icon(Icons.swap_horiz),
-            label: const Text('역할 변경'),
-          ),
-          TextButton.icon(
-            key: const Key('disconnect-wallet-button'),
-            onPressed: onDisconnect,
-            icon: const Icon(Icons.logout),
-            label: const Text('지갑 해제'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        children: [
-          const SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    StatusBadge(label: 'DJ gate', color: AppTheme.gold),
-                    StatusBadge(label: 'Local/mock auth', color: AppTheme.cyan),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Text('DJ shell 진입 확인'),
-                SizedBox(height: 8),
-                Text(
-                  'DJ 이름, 활동 클럽, mock roster authorization check를 통과해야 DJ approval lane이 열립니다.',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Connected wallet: ${viewModel.walletDisplayLabel}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '최근 서명 검증: ${viewModel.walletSession?.lastVerifiedAt?.toLocal() ?? viewModel.walletSession?.connectedAt.toLocal()}',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  key: const Key('dj-onboarding-name-field'),
-                  initialValue: viewModel.djName,
-                  onChanged: viewModel.updateDjName,
-                  decoration: const InputDecoration(
-                    labelText: 'DJ 이름',
-                    hintText: '예: DJ HYO',
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Minimal header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    key: const Key('role-switch-button'),
+                    onPressed: onSwitchRole,
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                    color: AppTheme.white,
                   ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  key: const Key('dj-onboarding-club-dropdown'),
-                  initialValue: viewModel.djClubId,
-                  items: clubs
-                      .map(
-                        (club) => DropdownMenuItem<String>(
-                          value: club.id,
-                          child: Text('${club.name} · ${club.neighborhood}'),
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: viewModel.selectDjClub,
-                  decoration: const InputDecoration(labelText: '활동 클럽'),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    key: const Key('dj-onboarding-submit'),
-                    onPressed: viewModel.canSubmitDjOnboarding
-                        ? viewModel.submitDjOnboarding
-                        : null,
-                    child: viewModel.isCheckingDjAccess
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Mock club authorization 확인'),
-                  ),
-                ),
-                if (viewModel.djAuthorizationStatusLabel
-                    case final status?) ...[
-                  const SizedBox(height: 16),
-                  StatusBadge(
-                    label: status,
-                    color: viewModel.isDjAuthorized
-                        ? AppTheme.lime
-                        : AppTheme.danger,
+                  const Spacer(),
+                  IconButton(
+                    key: const Key('disconnect-wallet-button'),
+                    onPressed: onDisconnect,
+                    icon: const Icon(Icons.logout, size: 20),
+                    color: AppTheme.grey,
                   ),
                 ],
-                if (viewModel.djAuthorizationDetail case final detail?) ...[
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                children: [
+                  // Icon illustration
+                  Center(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppTheme.pink.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.mic_outlined,
+                        color: AppTheme.pink,
+                        size: 34,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Join the Stage',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                   const SizedBox(height: 8),
-                  Text(detail),
+                  Text(
+                    'Set up your DJ profile to start managing requests.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  // Form
+                  TextFormField(
+                    key: const Key('dj-onboarding-name-field'),
+                    initialValue: viewModel.djName,
+                    onChanged: viewModel.updateDjName,
+                    style: const TextStyle(color: AppTheme.white),
+                    decoration: const InputDecoration(
+                      labelText: 'DJ Name',
+                      hintText: 'e.g. DJ HYO',
+                      prefixIcon: Icon(Icons.person_outline, color: AppTheme.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    key: const Key('dj-onboarding-club-dropdown'),
+                    initialValue: viewModel.djClubId,
+                    dropdownColor: AppTheme.panel,
+                    style: const TextStyle(color: AppTheme.white),
+                    items: clubs
+                        .map(
+                          (club) => DropdownMenuItem<String>(
+                            value: club.id,
+                            child: Text('${club.name} · ${club.neighborhood}'),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: viewModel.selectDjClub,
+                    decoration: const InputDecoration(
+                      labelText: 'Club',
+                      prefixIcon: Icon(Icons.nightlife_outlined, color: AppTheme.grey),
+                    ),
+                  ),
+                  if (viewModel.djAuthorizationStatusLabel case final status?) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (viewModel.isDjAuthorized
+                                ? AppTheme.green
+                                : AppTheme.red)
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: viewModel.isDjAuthorized
+                              ? AppTheme.green
+                              : AppTheme.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (viewModel.djAuthorizationDetail case final detail?) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        detail,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      key: const Key('dj-onboarding-submit'),
+                      onPressed: viewModel.canSubmitDjOnboarding
+                          ? () async {
+                              await viewModel.submitDjOnboarding();
+                              if (viewModel.isDjOnboardingComplete &&
+                                  viewModel.walletSession != null) {
+                                ref
+                                    .read(clubAppStoreProvider)
+                                    .setDjWalletForClub(
+                                      viewModel.djClubId!,
+                                      viewModel.walletSession!.publicKeyBase58,
+                                    );
+                              }
+                            }
+                          : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.pink,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+                        ),
+                      ),
+                      child: viewModel.isCheckingDjAccess
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.black,
+                              ),
+                            )
+                          : const Text(
+                              'Submit Application',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
+                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
+// ─── User Shell ───────────────────────────────────────────────────────────────
+
 class _UserShell extends StatelessWidget {
-  const _UserShell({required this.viewModel, required this.onDisconnect});
+  const _UserShell({
+    required this.viewModel,
+    required this.onSwitchRole,
+    required this.onDisconnect,
+  });
 
   final RootShellViewModel viewModel;
+  final VoidCallback onSwitchRole;
   final Future<void> Function() onDisconnect;
 
-  static const _pages = [DiscoveryScreen(), UserRequestsScreen()];
+  static const _pages = [
+    DiscoveryScreen(),
+    DiscoveryScreen(), // Search tab placeholder
+    UserRequestsScreen(),
+    _ProfilePlaceholder(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(viewModel.selectedIndex == 0 ? 'User shell' : '내 요청 상태'),
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: StatusBadge(
-                label: viewModel.walletDisplayLabel,
-                color: AppTheme.cyan,
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Top bar with wallet info + switch/disconnect
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6, height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          viewModel.walletDisplayLabel,
+                          style: const TextStyle(color: AppTheme.green, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    key: const Key('role-switch-button'),
+                    icon: const Icon(Icons.swap_horiz, color: AppTheme.pink),
+                    onPressed: onSwitchRole,
+                    tooltip: 'Switch role',
+                  ),
+                  IconButton(
+                    key: const Key('disconnect-wallet-button'),
+                    icon: const Icon(Icons.logout, color: AppTheme.grey),
+                    onPressed: onDisconnect,
+                    tooltip: 'Disconnect',
+                  ),
+                ],
               ),
             ),
-          ),
-          TextButton.icon(
-            key: const Key('role-switch-button'),
-            onPressed: viewModel.clearRoleSelection,
-            icon: const Icon(Icons.swap_horiz),
-            label: const Text('역할 변경'),
-          ),
-          TextButton.icon(
-            key: const Key('disconnect-wallet-button'),
-            onPressed: onDisconnect,
-            icon: const Icon(Icons.logout),
-            label: const Text('지갑 해제'),
-          ),
-        ],
+            Expanded(child: _pages[viewModel.selectedIndex]),
+          ],
+        ),
       ),
-      body: _pages[viewModel.selectedIndex],
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _UserBottomNav(
         selectedIndex: viewModel.selectedIndex,
-        onDestinationSelected: viewModel.selectTab,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined, key: Key('nav-user-discovery')),
-            selectedIcon: Icon(
-              Icons.map,
-              key: Key('nav-user-discovery-selected'),
-            ),
-            label: '탐색',
+        onTap: viewModel.selectTab,
+      ),
+    );
+  }
+}
+
+class _UserBottomNav extends StatelessWidget {
+  const _UserBottomNav({
+    required this.selectedIndex,
+    required this.onTap,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  static const _items = [
+    _NavItem(icon: Icons.map_outlined, activeIcon: Icons.map, label: 'Home', key: 'nav-user-discovery'),
+    _NavItem(icon: Icons.search_outlined, activeIcon: Icons.search, label: 'Search'),
+    _NavItem(icon: Icons.music_note_outlined, activeIcon: Icons.music_note, label: 'Requests', key: 'nav-user-requests'),
+    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return Container(
+      color: AppTheme.background,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.06),
           ),
-          NavigationDestination(
-            icon: Icon(
-              Icons.music_note_outlined,
-              key: Key('nav-user-requests'),
+          Padding(
+            padding: EdgeInsets.fromLTRB(0, 8, 0, 8 + bottomPad),
+            child: Row(
+              children: List.generate(_items.length, (i) {
+                final item = _items[i];
+                final selected = i == selectedIndex;
+                return Expanded(
+                  child: GestureDetector(
+                    key: item.key != null ? Key(item.key!) : null,
+                    onTap: () => onTap(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          selected ? item.activeIcon : item.icon,
+                          color: selected ? AppTheme.pink : AppTheme.grey,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            color: selected ? AppTheme.pink : AppTheme.grey,
+                            fontSize: 11,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
-            selectedIcon: Icon(
-              Icons.music_note,
-              key: Key('nav-user-requests-selected'),
-            ),
-            label: '내 요청',
           ),
         ],
       ),
@@ -575,7 +671,22 @@ class _UserShell extends StatelessWidget {
   }
 }
 
-class _DjShell extends StatelessWidget {
+class _NavItem {
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    this.key,
+  });
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final String? key;
+}
+
+// ─── DJ Shell ─────────────────────────────────────────────────────────────────
+
+class _DjShell extends StatefulWidget {
   const _DjShell({
     required this.onSwitchRole,
     required this.onDisconnect,
@@ -587,37 +698,172 @@ class _DjShell extends StatelessWidget {
   final WalletSession walletSession;
 
   @override
+  State<_DjShell> createState() => _DjShellState();
+}
+
+class _DjShellState extends State<_DjShell> {
+  int _selectedIndex = 0;
+
+  static const _pages = [
+    DjApprovalScreen(),
+    _QueuePlaceholder(),
+    _InboxPlaceholder(),
+    _SettingsPlaceholder(),
+  ];
+
+  @override
   Widget build(BuildContext context) {
+    final djLabel =
+        widget.walletSession.accountLabel ??
+        widget.walletSession.walletAddressPreview;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('DJ shell'),
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: StatusBadge(
-                label:
-                    walletSession.accountLabel ??
-                    walletSession.walletAddressPreview,
-                color: AppTheme.gold,
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Minimal header with DJ badge
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+              child: Row(
+                children: [
+                  // DJ name badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.pink.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.pink.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.headphones,
+                          color: AppTheme.pink,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          djLabel,
+                          style: const TextStyle(
+                            color: AppTheme.pink,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    key: const Key('role-switch-button'),
+                    onPressed: widget.onSwitchRole,
+                    icon: const Icon(Icons.swap_horiz, size: 20),
+                    color: AppTheme.grey,
+                  ),
+                  IconButton(
+                    key: const Key('disconnect-wallet-button'),
+                    onPressed: widget.onDisconnect,
+                    icon: const Icon(Icons.logout, size: 20),
+                    color: AppTheme.grey,
+                  ),
+                ],
               ),
             ),
+            Expanded(child: _pages[_selectedIndex]),
+          ],
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Home',
           ),
-          TextButton.icon(
-            key: const Key('role-switch-button'),
-            onPressed: onSwitchRole,
-            icon: const Icon(Icons.swap_horiz),
-            label: const Text('역할 변경'),
+          NavigationDestination(
+            icon: Icon(Icons.queue_music_outlined),
+            selectedIcon: Icon(Icons.queue_music),
+            label: 'Queue',
           ),
-          TextButton.icon(
-            key: const Key('disconnect-wallet-button'),
-            onPressed: onDisconnect,
-            icon: const Icon(Icons.logout),
-            label: const Text('지갑 해제'),
+          NavigationDestination(
+            icon: Icon(Icons.inbox_outlined),
+            selectedIcon: Icon(Icons.inbox),
+            label: 'Inbox',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
-      body: const DjApprovalScreen(),
+    );
+  }
+}
+
+// ─── Placeholder Screens ──────────────────────────────────────────────────────
+
+class _ProfilePlaceholder extends StatelessWidget {
+  const _ProfilePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Profile',
+        style: TextStyle(color: AppTheme.grey),
+      ),
+    );
+  }
+}
+
+class _QueuePlaceholder extends StatelessWidget {
+  const _QueuePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Queue',
+        style: TextStyle(color: AppTheme.grey),
+      ),
+    );
+  }
+}
+
+class _InboxPlaceholder extends StatelessWidget {
+  const _InboxPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Inbox',
+        style: TextStyle(color: AppTheme.grey),
+      ),
+    );
+  }
+}
+
+class _SettingsPlaceholder extends StatelessWidget {
+  const _SettingsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Settings',
+        style: TextStyle(color: AppTheme.grey),
+      ),
     );
   }
 }
